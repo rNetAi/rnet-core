@@ -17,6 +17,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -125,36 +127,55 @@ public class RNetGlobalRequestFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain)
             throws ServletException, IOException {
-        try {
-            RNetRequest RNetRequest = parseProtocolRequest(request);
 
-            Tickets tickets = new Tickets(parseTicketsStrict(RNetRequest.getTickets()));
+        RNetRequest rNetRequest;
+        try {
+            rNetRequest = parseProtocolRequest(request);
+
+            Tickets tickets = new Tickets(parseTicketsStrict(rNetRequest.getTickets()));
             request.setAttribute(RNetProtocol.RNET_IN, tickets);
 
             Usage usage = new Usage(tickets.getSize());
             request.setAttribute(RNetProtocol.RNET_OUT, usage);
 
-            RNetProtocolHttpRequestWrapper wrappedRequest = buildWrappedRequest(request, RNetRequest);
-            ContentCachingResponseWrapper wrapperResponse = new ContentCachingResponseWrapper(response);
-
-            filterChain.doFilter(wrappedRequest, wrapperResponse);
-
-            wrapperResponse.copyBodyToResponse();
-
-        }catch (IllegalArgumentException e){
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            response.setContentType("application/json");
-            ObjectNode errorNode = OBJECT_MAPPER.createObjectNode();
-            errorNode.put("error", e.getMessage());
-            response.getWriter().write(OBJECT_MAPPER.writeValueAsString(errorNode));
-            response.getWriter().flush();
-        } catch (Exception exception) {
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.setContentType("application/json");
-            ObjectNode errorNode = OBJECT_MAPPER.createObjectNode();
-            errorNode.put("error", exception.getMessage());
-            response.getWriter().write(OBJECT_MAPPER.writeValueAsString(errorNode));
-            response.getWriter().flush();
+        } catch (IllegalArgumentException e) {
+            writeErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage(), new HashMap<>());
+            return;
         }
+
+        RNetProtocolHttpRequestWrapper wrappedRequest = buildWrappedRequest(request, rNetRequest);
+        ContentCachingResponseWrapper cachedResponse = new ContentCachingResponseWrapper(response);
+
+        try {
+            filterChain.doFilter(wrappedRequest, cachedResponse);
+        } catch (Exception e) {
+            Usage usage = (Usage) request.getAttribute(RNetProtocol.RNET_OUT);
+            Object usageData = usage != null ? usage.getUsages() : new HashMap<>();
+            writeErrorResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage(), usageData);
+            return;
+        }
+
+        cachedResponse.copyBodyToResponse();
+    }
+
+    private static void writeErrorResponse(HttpServletResponse response,
+                                           int status,
+                                           String message,
+                                           Object usageData) throws IOException {
+        response.reset();
+        response.setStatus(status);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        ObjectNode errorNode = OBJECT_MAPPER.createObjectNode();
+        errorNode.put("error", message);
+        errorNode.set(RNetProtocol.RNET_OUT, OBJECT_MAPPER.valueToTree(usageData));
+
+        String body = OBJECT_MAPPER.writeValueAsString(errorNode);
+        response.setContentLength(body.getBytes(StandardCharsets.UTF_8).length);
+
+        PrintWriter writer = response.getWriter();
+        writer.write(body);
+        writer.flush();
     }
 }

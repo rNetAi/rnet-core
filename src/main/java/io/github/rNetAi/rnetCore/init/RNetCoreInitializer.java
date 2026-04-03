@@ -2,7 +2,7 @@ package io.github.rNetAi.rnetCore.init;
 
 import io.github.rNetAi.rnetCore.config.RNetCoreProperty;
 import io.github.rNetAi.rnetCore.rNetProtocol.RNetProtocol;
-import io.github.rNetAi.rnetCore.scanner.RNetAnnotationScanner;
+import io.github.rNetAi.rnetCore.scanner.RNetSpringScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationRunner;
@@ -16,11 +16,13 @@ import java.util.Map;
 public class RNetCoreInitializer implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(RNetCoreInitializer.class);
+    private final RNetSpringScanner rNetSpringScanner;
 
     private final RNetCoreProperty property;
     private final RestTemplate restTemplate;
 
-    public RNetCoreInitializer(RNetCoreProperty property) {
+    public RNetCoreInitializer(RNetSpringScanner rNetSpringScanner, RNetCoreProperty property) {
+        this.rNetSpringScanner = rNetSpringScanner;
         this.property = property;
         this.restTemplate = createRestTemplate();
     }
@@ -38,8 +40,7 @@ public class RNetCoreInitializer implements ApplicationRunner {
 //        }
 
         log.info("✅ RNet Developer Key validated");
-
-        new RNetAnnotationScanner().scan();
+        rNetSpringScanner.scan();
     }
 
     private boolean developerKeyIsValid(String key) {

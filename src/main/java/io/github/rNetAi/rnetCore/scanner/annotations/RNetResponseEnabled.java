@@ -1,14 +1,11 @@
 package io.github.rNetAi.rnetCore.scanner.annotations;
 
-import io.github.rNetAi.rnetCore.rNetProtocol.RNetResource;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD})
-public @interface TrackRNetResource {
-    Class<? extends RNetResource>[] usageResources();
+@Target({ElementType.METHOD , ElementType.ANNOTATION_TYPE})
+public @interface RNetResponseEnabled {
 }

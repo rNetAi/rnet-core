@@ -7,7 +7,6 @@ import io.github.rNetAi.rnetCore.rNetProtocol.entity.Tickets;
 import io.github.rNetAi.rnetCore.rNetProtocol.entity.Usage;
 import io.github.rNetAi.rnetCore.rNetProtocol.exception.RNetException;
 import jakarta.annotation.Nonnull;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -27,27 +26,27 @@ public class RNetResource {
             @Nonnull HttpServletRequest req,
             @Nonnull RestTemplate restTemplate,
             Map<String, Object> resourceRequestBody
-    ) throws ServletException, URISyntaxException {
+    ) throws RNetException {
 
         if (!RoutesContext.isPathPresent(req.getServletPath())) {
-            throw new IllegalCallerException("Path is not registered for AI call");
+            throw new RNetException("Path is not registered for AI call");
         }
 
         Tickets tickets = (Tickets) req.getAttribute(RNetProtocol.RNET_IN);
         if (tickets == null) {
-            throw new IllegalStateException("tickets is missing in request attributes");
+            throw new RNetException("tickets is missing in request attributes");
         }
 
         Class<? extends RNetResource> resourceProcessorClass =
                 (Class<? extends RNetResource>) ClassUtils.getUserClass(this);
         ResourceInfo info = ResourceContext.getClassMapping(resourceProcessorClass);
         if (info == null) {
-            throw new IllegalStateException("ResourceInfo not found for class " + resourceProcessorClass.getName());
+            throw new RNetException("ResourceInfo not found for class " + resourceProcessorClass.getName());
         }
 
         List<String> ticketUrls = tickets.getResourceTicket(info.getId());
         if (ticketUrls == null) {
-            throw new IllegalStateException("No tickets found for Resource ID " + info.getId());
+            throw new RNetException("No tickets found for Resource ID " + info.getId());
         }
 
         Map<String, Object> requestBody = new HashMap<>();
@@ -59,7 +58,12 @@ public class RNetResource {
         headers.set("Content-Type", "application/json");
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
-        URI baseUri = new URI(info.getUrl());
+        URI baseUri = null;
+        try {
+            baseUri = new URI(info.getUrl());
+        } catch (URISyntaxException e) {
+            throw new RNetException("invalid baseUri URI " + info.getUrl());
+        }
         URI fullUri = baseUri.resolve("/ai?modelId=" + info.getId());
 
         restTemplate.setErrorHandler(response -> false);
@@ -76,17 +80,17 @@ public class RNetResource {
             }
 
             if (!responseEntity.getStatusCode().is2xxSuccessful()) {
-                throw new ServletException(Objects.requireNonNull(responseEntity.getBody()).get("message").toString());
+                throw new RNetException(Objects.requireNonNull(responseEntity.getBody()).get("message").toString());
             }
 
             Map<String, Object> res = (Map<String, Object>) responseEntity.getBody();
             if (res == null) {
-                throw new ServletException("Response body is null from " + info.getName());
+                throw new RNetException("Response body is null from " + info.getName());
             }
             Usage usage = (Usage) req.getAttribute(RNetProtocol.RNET_OUT);
 
             if (usage == null) {
-                throw new IllegalStateException("usage var is missing in request attributes");
+                throw new RNetException("usage var is missing in request attributes");
             }
 
             usage.add(info.getId(), (String) res.get(RNetProtocol.RNET_OUT));

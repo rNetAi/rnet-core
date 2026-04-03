@@ -9,13 +9,22 @@ import io.github.rNetAi.rnetCore.rNetProtocol.entity.RNetResponse;
 import io.github.rNetAi.rnetCore.rNetProtocol.entity.Usage;
 import io.github.rNetAi.rnetCore.rNetProtocol.exception.RNetException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.core.annotation.Order;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Map;
 
+import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE;
+
+/**
+ * Thrown to signal an RNet protocol error.
+ * Do NOT declare an @ExceptionHandler for this exception —
+ * it is handled internally by the RNet  Core framework.
+ */
 @RestControllerAdvice
-public class RNetProtocolExceptionHandler {
+@Order(HIGHEST_PRECEDENCE)
+public final class RNetProtocolExceptionHandler {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
