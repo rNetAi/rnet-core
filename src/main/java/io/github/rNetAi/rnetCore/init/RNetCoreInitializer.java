@@ -34,6 +34,8 @@ public class RNetCoreInitializer implements ApplicationRunner {
 
         log.info("🚀 RNet initialized with key: {}", key);
 
+        RNetProtocol.DEVELOPER_KEY = key;
+
 //        if (!developerKeyIsValid(key)) {
 //            log.error("❌ RNet Developer Key is INVALID");
 //            return; // ❗ do NOT kill app
@@ -45,7 +47,7 @@ public class RNetCoreInitializer implements ApplicationRunner {
 
     private boolean developerKeyIsValid(String key) {
         try {
-            URI uri = UriComponentsBuilder.fromUriString(RNetProtocol.RNET_DEVELOPER_KEY_CHECKER)
+            URI uri = UriComponentsBuilder.fromUriString(RNetProtocol.RNET_DEVELOPER_KEY_CHECK)
                     .queryParam("key", key)
                     .build()
                     .toUri();

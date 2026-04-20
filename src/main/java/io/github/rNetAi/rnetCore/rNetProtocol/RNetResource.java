@@ -1,17 +1,15 @@
 package io.github.rNetAi.rnetCore.rNetProtocol;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.rNetAi.rnetCore.context.ResourceContext;
 import io.github.rNetAi.rnetCore.context.RoutesContext;
-import io.github.rNetAi.rnetCore.entity.ResourceInfo;
+import io.github.rNetAi.rnetCore.entity.ModelInfo;
 import io.github.rNetAi.rnetCore.rNetProtocol.entity.Tickets;
 import io.github.rNetAi.rnetCore.rNetProtocol.entity.Usage;
 import io.github.rNetAi.rnetCore.rNetProtocol.exception.RNetException;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.util.ClassUtils;
 import org.springframework.web.client.RestTemplate;
 
@@ -21,6 +19,10 @@ import java.util.*;
 
 public class RNetResource {
 
+    /**
+     * Sends the resource request to the AI server and returns the response data.
+     * Tracks usage whether the call succeeds or fails.
+     */
     @SuppressWarnings("unchecked")
     public final Map<String, Object> call(
             @Nonnull HttpServletRequest req,
@@ -34,67 +36,79 @@ public class RNetResource {
 
         Tickets tickets = (Tickets) req.getAttribute(RNetProtocol.RNET_IN);
         if (tickets == null) {
-            throw new RNetException("tickets is missing in request attributes");
+            throw new RNetException("Tickets are missing in request attributes");
+        }
+
+        Usage usage = (Usage) req.getAttribute(RNetProtocol.RNET_OUT);
+        if (usage == null) {
+            throw new RNetException("Usage attribute is missing in request");
         }
 
         Class<? extends RNetResource> resourceProcessorClass =
                 (Class<? extends RNetResource>) ClassUtils.getUserClass(this);
-        ResourceInfo info = ResourceContext.getClassMapping(resourceProcessorClass);
+        ModelInfo info = ResourceContext.getClassMapping(resourceProcessorClass);
         if (info == null) {
-            throw new RNetException("ResourceInfo not found for class " + resourceProcessorClass.getName());
+            throw new RNetException("ResourceInfo not found for class: " + resourceProcessorClass.getName());
         }
 
         List<String> ticketUrls = tickets.getResourceTicket(info.getId());
         if (ticketUrls == null) {
-            throw new RNetException("No tickets found for Resource ID " + info.getId());
+            throw new RNetException("No tickets found for Resource ID: " + info.getId());
         }
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("ticket", ticketUrls);
-        requestBody.put("id", "developer's login id");
+        requestBody.put("developerId", RNetProtocol.DEVELOPER_KEY);
         requestBody.put("modelBody", resourceRequestBody);
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Content-Type", "application/json");
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
-        URI baseUri = null;
+        URI fullUri;
         try {
-            baseUri = new URI(info.getUrl());
+            URI baseUri = new URI(info.getUrl());
+            fullUri = baseUri.resolve("/ai/" + info.getId());
         } catch (URISyntaxException e) {
-            throw new RNetException("invalid baseUri URI " + info.getUrl());
+            throw new RNetException("Invalid URI: " + info.getUrl());
         }
-        URI fullUri = baseUri.resolve("/ai?modelId=" + info.getId());
-
-        restTemplate.setErrorHandler(response -> false);
 
         ResponseEntity<Map> responseEntity = restTemplate.exchange(
-                    fullUri,
-                    HttpMethod.POST,
-                    entity,
-                    Map.class
-            );
+                fullUri,
+                HttpMethod.POST,
+                entity,
+                Map.class
+        );
 
-            if(responseEntity.getStatusCode().is4xxClientError()){
-                throw new RNetException(Objects.requireNonNull(responseEntity.getBody()));
+        Map<String, Object> res = (Map<String, Object>) responseEntity.getBody();
+        if (res == null) {
+            throw new RNetException("Response body is empty from: " + info.getUrl());
+        }
+
+        String errorMsg = (String) res.get(RNetProtocol.RNET_ERROR);
+        if (errorMsg != null) {
+            String usageStr = (String) res.get(RNetProtocol.RNET_OUT);
+            if (usageStr != null) {
+                usage.add(info.getId(), usageStr);
             }
+            throw new RNetException(errorMsg);
+        }
 
-            if (!responseEntity.getStatusCode().is2xxSuccessful()) {
-                throw new RNetException(Objects.requireNonNull(responseEntity.getBody()).get("message").toString());
-            }
+        String usageStr = (String) res.get(RNetProtocol.RNET_OUT);
+        if (usageStr == null) {
+            throw new RNetException("'usage' field missing in response from: " + info.getName());
+        }
+        usage.add(info.getId(), usageStr);
 
-            Map<String, Object> res = (Map<String, Object>) responseEntity.getBody();
-            if (res == null) {
-                throw new RNetException("Response body is null from " + info.getName());
-            }
-            Usage usage = (Usage) req.getAttribute(RNetProtocol.RNET_OUT);
+        Object data = res.get("data");
+        if (data == null) {
+            throw new RNetException("'data' field missing in response from: " + info.getName());
+        }
 
-            if (usage == null) {
-                throw new RNetException("usage var is missing in request attributes");
-            }
+        if (!(data instanceof Map)) {
+            throw new RNetException("'data' field is not a JSON object from: " + info.getName());
+        }
 
-            usage.add(info.getId(), (String) res.get(RNetProtocol.RNET_OUT));
-
-            return (Map<String, Object>) res.get("data");
+        return (Map<String, Object>) data;
     }
 }

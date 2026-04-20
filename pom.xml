@@ -7,10 +7,10 @@
 
     <groupId>io.github.rnetai</groupId>
     <artifactId>rnet-core</artifactId>
-    <version>0.1.0</version>
+    <version>1.0.0</version>
 
-    <name>RNet Core</name>
-    <description>RNet Core Library for rNetwork to access free ai for developer</description>
+    <name>rNet Core</name>
+    <description>rNet Core Library for developer to use ai</description>
     <url>https://github.com/rNetAi/rnet-core</url>
 
     <licenses>

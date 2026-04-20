@@ -295,13 +295,11 @@ package io.github.rNetAi.rnetCore.scanner;
 
 import io.github.rNetAi.rnetCore.context.ResourceContext;
 import io.github.rNetAi.rnetCore.context.RoutesContext;
-import io.github.rNetAi.rnetCore.entity.ResourceInfo;
+import io.github.rNetAi.rnetCore.entity.ModelInfo;
 import io.github.rNetAi.rnetCore.rNetProtocol.RNetProtocol;
 import io.github.rNetAi.rnetCore.rNetProtocol.RNetResource;
 import io.github.rNetAi.rnetCore.scanner.annotations.RNetEndpoint;
 import io.github.rNetAi.rnetCore.scanner.annotations.Resource;
-
-import jakarta.annotation.PostConstruct;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -394,7 +392,7 @@ public class RNetSpringScanner {
 
         if (allResources.isEmpty()) return;
 
-        Map<String, ResourceInfo> resourceInfoMap = fetchResourceInfo();
+        Map<String, ModelInfo> resourceInfoMap = fetchResourceInfo();
 
         validateResources(resourceInfoMap);
 
@@ -404,7 +402,7 @@ public class RNetSpringScanner {
     /**
      * Call resource manager
      */
-    private Map<String, ResourceInfo> fetchResourceInfo() {
+    private Map<String, ModelInfo> fetchResourceInfo() {
 
         try {
 
@@ -412,9 +410,9 @@ public class RNetSpringScanner {
 
             RestTemplate restTemplate = new RestTemplate();
 
-            ResponseEntity<Map<String, ResourceInfo>> response =
+            ResponseEntity<Map<String, ModelInfo>> response =
                     restTemplate.exchange(
-                            RNetProtocol.RNET_CENTRAL_SERVER_RESOURCE,
+                            RNetProtocol.RNET_CENTRAL_AI_MODEL_CHECK,
                             HttpMethod.POST,
                             new HttpEntity<>(allResources),
                             new ParameterizedTypeReference<>() {}
@@ -437,7 +435,7 @@ public class RNetSpringScanner {
     /**
      * Validate resources
      */
-    private void validateResources(Map<String, ResourceInfo> resourceInfoMap) {
+    private void validateResources(Map<String, ModelInfo> resourceInfoMap) {
 
         List<String> notFound = new ArrayList<>();
 
@@ -456,7 +454,7 @@ public class RNetSpringScanner {
     /**
      * Build EndpointMatcher map
      */
-    private void buildResourceCollection(Map<String, ResourceInfo> resourceInfoMap) {
+    private void buildResourceCollection(Map<String, ModelInfo> resourceInfoMap) {
 
         log.debug("Building resource collection...");
 

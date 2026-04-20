@@ -2,15 +2,15 @@ package io.github.rNetAi.rnetCore.entity;
 
 import java.util.Objects;
 
-public class ResourceInfo {
+public class ModelInfo {
     private long id;
     private String name;
     private String url;
 
-    public ResourceInfo() {
+    public ModelInfo() {
     }
 
-    public ResourceInfo(long id, String name, String url) {
+    public ModelInfo(long id, String name, String url) {
         this.id = id;
         this.name = name;
         this.url = url;
@@ -19,7 +19,7 @@ public class ResourceInfo {
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
-        ResourceInfo that = (ResourceInfo) o;
+        ModelInfo that = (ModelInfo) o;
         return id == that.id && Objects.equals(name, that.name) && Objects.equals(url, that.url);
     }
 
