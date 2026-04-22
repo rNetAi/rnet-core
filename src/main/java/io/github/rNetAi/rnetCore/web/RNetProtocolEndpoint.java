@@ -1,9 +1,6 @@
 package io.github.rNetAi.rnetCore.web;
 
-import io.github.rNetAi.rnetCore.context.ResourceContext;
 import io.github.rNetAi.rnetCore.context.RoutesContext;
-import io.github.rNetAi.rnetCore.dto.InitConnectionDTO;
-import io.github.rNetAi.rnetCore.entity.Route;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
