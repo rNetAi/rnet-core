@@ -1,6 +1,5 @@
 package io.github.rNetAi.rnetCore.rNetProtocol;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.rNetAi.rnetCore.context.ResourceContext;
 import io.github.rNetAi.rnetCore.context.RoutesContext;
 import io.github.rNetAi.rnetCore.entity.ModelInfo;
@@ -53,7 +52,11 @@ public class RNetResource {
 
         List<String> ticketUrls = tickets.getResourceTicket(info.getId());
         if (ticketUrls == null) {
-            throw new RNetException("No tickets found for Resource ID: " + info.getId());
+            throw new RNetException(
+                    "No AI pass found for: " + resourceProcessorClass.getName() +
+                            "\nReason: Backend endpoint models may have changed, but the rNet Client cache is outdated." +
+                            "\nSolution: Restart the rNet Client or send a clear cache command."
+            );
         }
 
         Map<String, Object> requestBody = new HashMap<>();

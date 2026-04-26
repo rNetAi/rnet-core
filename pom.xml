@@ -7,7 +7,7 @@
 
     <groupId>io.github.rnetai</groupId>
     <artifactId>rnet-core</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.2</version>
 
     <name>rNet Core</name>
     <description>rNet Core Library for developer to use ai</description>
@@ -120,6 +120,11 @@
                     <release>21</release>
                     <compilerArgument>-proc:none</compilerArgument>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
             </plugin>
 
             <plugin>
