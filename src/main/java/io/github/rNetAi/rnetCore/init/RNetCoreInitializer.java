@@ -11,7 +11,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
-import java.util.Map;
 
 public class RNetCoreInitializer implements ApplicationRunner {
 
@@ -32,16 +31,17 @@ public class RNetCoreInitializer implements ApplicationRunner {
 
         String key = property.getDeveloper().getKey();
 
-        log.info("🚀 RNet initialized with key: {}", key);
+        log.info("Check rNet developer key: {}", key);
 
         RNetProtocol.DEVELOPER_KEY = key;
 
-//        if (!developerKeyIsValid(key)) {
-//            log.error("❌ RNet Developer Key is INVALID");
-//            return; // ❗ do NOT kill app
-//        }
+        if (!developerKeyIsValid(key)) {
+            log.error("rNet Developer Key is INVALID");
+            throw new RuntimeException("rNet Developer Key is INVALID");
+//            return; // ❗ do I need to kill app ?
+        }
 
-        log.info("✅ RNet Developer Key validated");
+        log.info("Developer Key validated For rNet Protocol");
         rNetSpringScanner.scan();
     }
 
@@ -52,13 +52,12 @@ public class RNetCoreInitializer implements ApplicationRunner {
                     .build()
                     .toUri();
 
-            ResponseEntity<Map> response =
-                    restTemplate.getForEntity(uri, Map.class);
+            ResponseEntity<Void> response = restTemplate.getForEntity(uri , Void.class);
 
             return response.getStatusCode().is2xxSuccessful();
 
         } catch (Exception e) {
-            log.error("❌ Error validating developer key", e);
+            log.error("Error validating developer key", e);
             return false;
         }
     }
@@ -67,7 +66,6 @@ public class RNetCoreInitializer implements ApplicationRunner {
         var factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(3000);
         factory.setReadTimeout(3000);
-
         return new RestTemplate(factory);
     }
 }
