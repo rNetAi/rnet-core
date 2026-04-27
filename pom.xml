@@ -7,12 +7,17 @@
 
     <groupId>io.github.rnetai</groupId>
     <artifactId>rnet-core</artifactId>
-    <version>1.0.4</version>
+    <version>1.0.5</version>
 
     <name>rNet Core</name>
-    <description>rNet Core Library for developer to use AI without paying upfront token cost.</description>
-    <url>https://github.com/rNetAi/rnet-core</url>
+    <description>Java core library for integrating the rNet Protocol and building AI-powered applications without upfront token costs.</description>
 
+    <url>https://www.rnetai.org/docs</url>
+
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/rNetAi/rnet-core/issues</url>
+    </issueManagement>
     <licenses>
         <license>
             <name>MIT License</name>
